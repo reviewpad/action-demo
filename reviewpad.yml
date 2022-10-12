@@ -1,0 +1,75 @@
+api-version: reviewpad.com/v3.x
+
+labels:
+  size-s:
+    name: "size/s"
+    color: "#294b69"
+  size-m:
+    name: "size/m"
+    color: "#a8c3f7"
+  size-l:
+    name: "size/l"
+    color: "#8a2138"
+  conflicts:
+    color: "#1c2131"
+
+rules:
+  - name: more-than-one-approval
+    spec: '$length($reviewers()) > 0' # && $all($reviewers(), ($reviewer => $reviewerStatus($reviewer) == "APPROVED"))'
+
+workflows:
+  - name: label-pull-request-with-size
+    always-run: true
+    if:
+      - rule: $size() <= 25
+        extra-actions:
+          - $addLabel("size-s")
+      - rule: $size() > 25 && $size() <= 100
+        extra-actions:
+          - $addLabel("size-m")
+      - rule: $size() > 100
+        extra-actions:
+          - $addLabel("size-l")
+
+  - name: empty-description
+    always-run: true
+    if:
+      - $description() == ""
+    then: 
+      - $error("The description is empty. Please add more information!")
+
+  - name: review-tests
+    always-run: true
+    if:
+      - $hasFilePattern("src/*_test.go")
+    then:
+      - $info("Pull requests which modify tests need an explicit approval")
+      - $assignRandomReviewer()
+  
+  - name: validate-commits
+    always-run: true
+    if:
+      - 'true'
+    then:
+      - $commitLint()
+  
+  - name: modified-code-contains-lib
+    always-run: true
+    if:
+      - $hasCodePattern("rand.")
+    then:
+      - $info("This pull request contains calls to random external library")
+
+  - name: label-pull-requests-with-git-conflicts
+    always-run: true
+    if:
+      - $hasGitConflicts()
+    then:
+      - '$addLabel("conflicts")'
+  
+  - name: auto-merge-approved-pull-requests
+    always-run: true
+    if:
+      - rule: more-than-one-approval
+    then:
+      - $merge("rebase")
