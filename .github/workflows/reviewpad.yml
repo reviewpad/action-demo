@@ -12,6 +12,7 @@ on:
       - opened
       - synchronize
       - edited
+  pull_request_review:
 
 # These permissions are necessary to automate pull requests from forks.
 permissions:

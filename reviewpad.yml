@@ -15,7 +15,7 @@ labels:
 
 rules:
   - name: more-than-one-approval
-    spec: '$length($reviewers()) > 0' # && $all($reviewers(), ($reviewer => $reviewerStatus($reviewer) == "APPROVED"))'
+    spec: '$length($reviewers()) > 0 && $all($reviewers(), ($reviewer: String => $reviewerStatus($reviewer) == "APPROVED"))'
 
 workflows:
   - name: label-pull-request-with-size
